@@ -21,6 +21,7 @@ import org.springframework.util.Assert;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 import static com.javarush.jira.bugtracking.ObjectType.TASK;
 import static com.javarush.jira.bugtracking.task.TaskUtil.fillExtraFields;
@@ -39,6 +40,8 @@ public class TaskService {
     private final SprintRepository sprintRepository;
     private final TaskExtMapper extMapper;
     private final UserBelongRepository userBelongRepository;
+    private final Handlers.TaskFullHandler taskFullHandler;
+    private final TaskFullMapper taskFullMapper;
 
     @Transactional
     public void changeStatus(long taskId, String statusCode) {
@@ -86,6 +89,7 @@ public class TaskService {
         }
     }
 
+    @Transactional(readOnly = true)
     public TaskToFull get(long id) {
         Task task = Util.checkExist(id, handler.getRepository().findFullById(id));
         TaskToFull taskToFull = fullMapper.toTo(task);
@@ -139,5 +143,21 @@ public class TaskService {
         if (!userType.equals(possibleUserType)) {
             throw new DataConflictException(String.format(assign ? CANNOT_ASSIGN : CANNOT_UN_ASSIGN, userType, task.getStatusCode()));
         }
+    }
+
+    @Transactional
+    public void addTags(long id, String... tags) {
+        Task task = handler.getRepository().getExisted(id);
+        task.getTags().addAll(Set.of(tags));
+        TaskToFull toFull = taskFullMapper.toTo(task);
+        taskFullHandler.updateFromTo(toFull, id);
+    }
+
+    @Transactional
+    public void removeTags(long id, String... tags) {
+        Task task = handler.getRepository().getExisted(id);
+        task.getTags().removeAll(Set.of(tags));
+        TaskToFull toFull = taskFullMapper.toTo(task);
+        taskFullHandler.updateFromTo(toFull, id);
     }
 }
