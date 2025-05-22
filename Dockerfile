@@ -9,6 +9,5 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 COPY --from=build /app/target/jira-1.0.jar /app/
 COPY ./resources /app/resources
-COPY ./config /app/config
 EXPOSE 8080
 CMD ["java", "-jar", "jira-1.0.jar"]
