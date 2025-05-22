@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.Assert;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
@@ -160,4 +161,67 @@ public class TaskService {
         TaskToFull toFull = taskFullMapper.toTo(task);
         taskFullHandler.updateFromTo(toFull, id);
     }
+
+
+
+    public Duration calculateDevelopmentTime(Task task) {
+        if (task == null || task.getId() == null) {
+            throw new IllegalArgumentException("Task or Task ID cannot be null.");
+        }
+        Long taskId = task.getId();
+        List<Activity> activities = activityHandler.getRepository().findAllByTaskIdOrderByUpdatedDesc(taskId);
+
+        LocalDateTime inProgressTime = null;
+        LocalDateTime readyForReviewTime = null;
+
+        for (Activity activity : activities) {
+            if ("in_progress".equals(activity.getStatusCode())) {
+                inProgressTime = activity.getUpdated();
+                break;
+            }
+        }
+
+        for (Activity activity : activities) {
+            if ("ready_for_review".equals(activity.getStatusCode())) {
+                readyForReviewTime = activity.getUpdated();
+                break;
+            }
+        }
+
+        if (inProgressTime != null && readyForReviewTime != null && readyForReviewTime.isAfter(inProgressTime)) {
+            return Duration.between(inProgressTime, readyForReviewTime);
+        }
+        return Duration.ZERO;
+    }
+
+    public Duration calculateTestingTime(Task task) {
+        if (task == null || task.getId() == null) {
+            throw new IllegalArgumentException("Task or Task ID cannot be null.");
+        }
+        Long taskId = task.getId();
+        List<Activity> activities = activityHandler.getRepository().findAllByTaskIdOrderByUpdatedDesc(taskId);
+
+        LocalDateTime readyForReviewTime = null;
+        LocalDateTime doneTime = null;
+
+        for (Activity activity : activities) {
+            if ("ready_for_review".equals(activity.getStatusCode())) {
+                readyForReviewTime = activity.getUpdated();
+                break;
+            }
+        }
+
+        for (Activity activity : activities) {
+            if ("done".equals(activity.getStatusCode())) {
+                doneTime = activity.getUpdated();
+                break;
+            }
+        }
+
+        if (readyForReviewTime != null && doneTime != null && doneTime.isAfter(readyForReviewTime)) {
+            return Duration.between(readyForReviewTime, doneTime);
+        }
+        return Duration.ZERO;
+    }
+
 }

@@ -1,6 +1,6 @@
 --liquibase formatted SQL
 
---changeset kmpk:init_schema
+--changeset init_schema
 DROP TABLE IF EXISTS USER_ROLE;
 DROP TABLE IF EXISTS CONTACT;
 DROP TABLE IF EXISTS MAIL_CASE;
@@ -189,7 +189,7 @@ CREATE TABLE USER_ROLE
     CONSTRAINT FK_USER_ROLE FOREIGN KEY (USER_ID) REFERENCES USERS (ID) ON DELETE CASCADE
 );
 
---changeset kmpk:populate_data
+--changeset populate_data
 --============ REFERENCES =================
 INSERT INTO REFERENCE (CODE, TITLE, REF_TYPE)
 -- TASK
@@ -243,7 +243,7 @@ VALUES ('assigned', 'Assigned', 6, '1'),
        ('done', 'Done', 3, 'canceled'),
        ('canceled', 'Canceled', 3, NULL);
 
---changeset gkislin:change_backtracking_tables
+--changeset change_backtracking_tables
 
 ALTER TABLE SPRINT RENAME COLUMN TITLE TO CODE;
 ALTER TABLE SPRINT
@@ -261,7 +261,7 @@ ALTER TABLE TASK
 ALTER TABLE TASK
     DROP COLUMN UPDATED;
 
---changeset ishlyakhtenkov:change_task_status_reference
+--changeset change_task_status_reference
 
 DELETE
   FROM REFERENCE
@@ -276,7 +276,7 @@ VALUES ('todo', 'ToDo', 3, 'in_progress,canceled'),
        ('done', 'Done', 3, 'canceled'),
        ('canceled', 'Canceled', 3, NULL);
 
---changeset gkislin:users_add_on_delete_cascade
+--changeset users_add_on_delete_cascade
 
 ALTER TABLE ACTIVITY
     DROP CONSTRAINT IF EXISTS FK_ACTIVITY_USERS;
@@ -297,7 +297,7 @@ ALTER TABLE ATTACHMENT
         FOREIGN KEY (USER_ID) REFERENCES USERS (ID) ON DELETE CASCADE;
 
 
---changeset valeriyemelyanov:change_user_type_reference
+--changeset change_user_type_reference
 
 DELETE
   FROM REFERENCE
@@ -313,7 +313,7 @@ VALUES ('project_author', 'Author', 5),
        ('task_reviewer', 'Reviewer', 5),
        ('task_tester', 'Tester', 5);
 
---changeset apolik:refactor_reference_aux
+--changeset refactor_reference_aux
 
 -- TASK_TYPE
 DELETE
@@ -329,8 +329,15 @@ VALUES ('todo', 'ToDo', 3, 'in_progress,canceled|'),
        ('done', 'Done', 3, 'canceled|'),
        ('canceled', 'Canceled', 3, NULL);
 
---changeset ishlyakhtenkov:change_UK_USER_BELONG
+--changeset change_UK_USER_BELONG
 
 DROP INDEX UK_USER_BELONG;
 CREATE UNIQUE INDEX UK_USER_BELONG
     ON USER_BELONG (OBJECT_ID, OBJECT_TYPE, USER_ID, USER_TYPE_CODE, ENDPOINT);
+
+--changeset add_sample_activity_data
+INSERT INTO ACTIVITY (ID, AUTHOR_ID, TASK_ID, UPDATED, STATUS_CODE)
+VALUES
+    (nextval('ACTIVITY_ID_SEQ'), 1, TASK_ID, NOW() - INTERVAL '5 days', 'in_progress'),
+    (nextval('ACTIVITY_ID_SEQ'), 1, TASK_ID, NOW() - INTERVAL '2 days', 'ready_for_review'),
+    (nextval('ACTIVITY_ID_SEQ'), 1, TASK_ID, NOW(), 'done');
