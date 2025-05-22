@@ -244,7 +244,6 @@ VALUES ('assigned', 'Assigned', 6, '1'),
        ('canceled', 'Canceled', 3, NULL);
 
 --changeset change_backtracking_tables
-
 ALTER TABLE SPRINT RENAME COLUMN TITLE TO CODE;
 ALTER TABLE SPRINT
     ALTER COLUMN CODE TYPE VARCHAR (32);
@@ -262,7 +261,6 @@ ALTER TABLE TASK
     DROP COLUMN UPDATED;
 
 --changeset change_task_status_reference
-
 DELETE
   FROM REFERENCE
  WHERE REF_TYPE = 3;
@@ -277,7 +275,6 @@ VALUES ('todo', 'ToDo', 3, 'in_progress,canceled'),
        ('canceled', 'Canceled', 3, NULL);
 
 --changeset users_add_on_delete_cascade
-
 ALTER TABLE ACTIVITY
     DROP CONSTRAINT IF EXISTS FK_ACTIVITY_USERS;
 ALTER TABLE ACTIVITY
@@ -298,7 +295,6 @@ ALTER TABLE ATTACHMENT
 
 
 --changeset change_user_type_reference
-
 DELETE
   FROM REFERENCE
  WHERE REF_TYPE = 5;
@@ -314,7 +310,6 @@ VALUES ('project_author', 'Author', 5),
        ('task_tester', 'Tester', 5);
 
 --changeset refactor_reference_aux
-
 -- TASK_TYPE
 DELETE
   FROM REFERENCE
@@ -330,7 +325,6 @@ VALUES ('todo', 'ToDo', 3, 'in_progress,canceled|'),
        ('canceled', 'Canceled', 3, NULL);
 
 --changeset change_UK_USER_BELONG
-
 DROP INDEX UK_USER_BELONG;
 CREATE UNIQUE INDEX UK_USER_BELONG
     ON USER_BELONG (OBJECT_ID, OBJECT_TYPE, USER_ID, USER_TYPE_CODE, ENDPOINT);
@@ -341,3 +335,17 @@ VALUES
     (nextval('ACTIVITY_ID_SEQ'), 1, TASK_ID, NOW() - INTERVAL '5 days', 'in_progress'),
     (nextval('ACTIVITY_ID_SEQ'), 1, TASK_ID, NOW() - INTERVAL '2 days', 'ready_for_review'),
     (nextval('ACTIVITY_ID_SEQ'), 1, TASK_ID, NOW(), 'done');
+
+--changeset refresh_token
+create table if not exists public.refresh_token
+(
+    id          bigserial    not null,
+    created_at  timestamp(6) not null,
+    expiry_date timestamp(6) not null,
+    token       varchar(255) not null,
+    updated_at  timestamp(6) not null,
+    user_id     bigint       not null,
+    primary key (id),
+    constraint unique_refresh_token_user_id unique (user_id),
+    constraint fk_refresh_token_user_id FOREIGN KEY (user_id) REFERENCES USERS(id) ON DELETE CASCADE
+);
